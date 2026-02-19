@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSL Audio Model Dynamics</title>
+    
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            color: #0f172a;
+        }
+
+        .card-shadow {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, #0891b2, #4f46e5, #db2777);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Large responsive container for iframes */
+        .chart-container-large {
+            position: relative;
+            height: 700px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .plotly-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f8fafc; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+    </style>
+
+    <script>
+        function dashboardApp() {
+            return {
+                currentScale: 'base', // base or large
+                currentMetric: 'curvature', 
+                noiseLevel: 10,
+                pitchShift: 0,
+                
+                metrics: [
+                    { id: 'curvature', name: 'Curvature', icon: 'move', color: '#16a34a' },
+                    { id: 'entropy', name: 'Entropy', icon: 'info', color: '#0891b2' },
+                    { id: 'invariance', name: 'Invariance', icon: 'shield', color: '#db2777' }
+                ],
+                
+                init() {
+                    // Initialize icons
+                    setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 100);
+                    
+                    this.$nextTick(() => {
+                        this.initPlotly();
+                    });
+
+                    // Refresh icons on metric change
+                    this.$watch('currentMetric', () => {
+                        setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
+                    });
+                },
+
+                initPlotly() {
+                    this.updateSignal();
+                },
+
+                updateSignal() {
+                    const points = 600;
+                    const x = Array.from({length: points}, (_, i) => i);
+                    const freq = 0.05 + (this.pitchShift / 1000);
+                    const noise = this.noiseLevel / 100;
+                    
+                    const original = x.map(v => (Math.sin(v * 0.01) * 0.5 + 0.5) * Math.sin(v * 0.1));
+                    const perturbed = x.map((v, i) => {
+                        const env = Math.sin(v * 0.01) * 0.5 + 0.5;
+                        return (env * Math.sin(v * (0.1 + freq))) + (Math.random() - 0.5) * noise * 2;
+                    });
+
+                    const data = [
+                        { x: x, y: original, name: 'Original', line: {color: '#cbd5e1', width: 1}, opacity: 0.5, type: 'scatter' },
+                        { x: x, y: perturbed, name: 'Perturbed', line: {color: '#0891b2', width: 2}, type: 'scatter' }
+                    ];
+
+                    const layout = {
+                        paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+                        showlegend: true, legend: { font: { color: '#64748b' }, orientation: 'h', y: 1.2 },
+                        margin: { t: 0, b: 40, l: 40, r: 20 },
+                        xaxis: { showgrid: false, tickfont: {color: '#94a3b8'} },
+                        yaxis: { showgrid: true, gridcolor: '#f1f5f9', tickfont: {color: '#94a3b8'}, range: [-1.5, 1.5] }
+                    };
+
+                    const plotEl = document.getElementById('plotlySignal');
+                    if (plotEl) Plotly.newPlot(plotEl, data, layout, {responsive: true, displayModeBar: false});
+                },
+
+                calculateDistortion() {
+                    return Math.min(100, Math.round((parseInt(this.noiseLevel) + Math.abs(parseInt(this.pitchShift)) * 2)));
+                }
+            };
+        }
+    </script>
+</head>
+<body x-data="dashboardApp()">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-cyan-600 rounded-lg flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <i data-lucide="waves" class="text-white w-5 h-5"></i>
+            </div>
+            <span class="font-bold text-xl tracking-tight text-slate-900">AudioSSL <span class="text-slate-400 font-normal">Explorer</span></span>
+        </div>
+        <div class="hidden md:flex space-x-6 text-sm font-medium text-slate-500">
+            <a href="#abstract" class="hover:text-cyan-600 transition">Abstract</a>
+            <a href="#metrics" class="hover:text-cyan-600 transition">Metrics</a>
+            <a href="#impact" class="hover:text-cyan-600 transition">Training Dynamics</a>
+            <a href="#signal" class="hover:text-cyan-600 transition">Signal Lab</a>
+            <a href="#clpm" class="hover:text-cyan-600 transition">CLPM Matrix</a>
+        </div>
+        <a href="#" class="bg-slate-900 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-cyan-600 transition shadow-lg shadow-slate-900/10">Download PDF</a>
+    </nav>
+
+    <!-- Hero -->
+    <section class="pt-32 pb-12 px-6 max-w-7xl mx-auto text-center">
+        <div class="inline-block px-3 py-1 rounded-full border border-slate-200 text-[10px] font-mono text-cyan-600 mb-6 bg-slate-50 uppercase tracking-widest font-bold">
+            Interactive Scientific Showcase
+        </div>
+        <h1 class="text-4xl md:text-6xl font-extrabold mb-6 leading-tight text-slate-900">
+            Dynamics of <span class="gradient-text">SSL Audio</span> Models
+        </h1>
+        <p class="text-slate-500 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
+            Investigating layer-wise information compression, geometric manifolds, and discriminative invariance.
+        </p>
+    </section>
+
+    <!-- Abstract -->
+    <section id="abstract" class="py-12 px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 card-shadow p-8 rounded-3xl">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-slate-900">
+                <i data-lucide="book-open" class="text-cyan-600 w-5 h-5"></i>
+                Abstract
+            </h2>
+            <p class="text-slate-600 leading-relaxed text-sm italic">
+                "Self-supervised learning models like Wav2Vec2, HuBERT, and WavLM learn rich speech representations, yet their internal layer-wise dynamics remain unclear. We analyze these models through three perspectives: entropy, curvature, and invariance. Our study reveals patterns of compression and late-layer sensitivity shifts."
+            </p>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 p-8 rounded-3xl flex flex-col justify-center">
+            <h2 class="text-lg font-bold mb-3 text-slate-900">Quick Summary</h2>
+            <ul class="space-y-3 text-xs text-slate-500">
+                <li class="flex gap-2">
+                    <span class="text-cyan-600 font-bold">1.</span>
+                    <span>Models increase complexity before unfolding manifolds for separability.</span>
+                </li>
+                <li class="flex gap-2">
+                    <span class="text-cyan-600 font-bold">2.</span>
+                    <span>Scaling size (Large) shifts geometric organization more than data volume.</span>
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Main Metrics Visualizer -->
+    <section id="metrics" class="py-12 px-6 max-w-7xl mx-auto">
+        
+        <!-- Selection Controls -->
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 gap-8">
+            <div class="max-w-md">
+                <h2 class="text-3xl font-bold mb-2 text-slate-900 italic tracking-tight uppercase">Layer-wise Dynamics</h2>
+                <p class="text-slate-500 text-sm font-medium">Toggle perspectives to explore interactive results from our standalone Plotly exports.</p>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-6 w-full lg:w-auto">
+                <!-- Metric Selectors (Toggles) -->
+                <div class="space-y-2">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 ml-1 tracking-widest">Analytical Lens</span>
+                    <div class="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
+                        <template x-for="m in metrics" :key="m.id">
+                            <button 
+                                @click="currentMetric = m.id"
+                                :class="currentMetric === m.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+                                class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 capitalize"
+                            >
+                                <i :data-lucide="m.icon" class="w-3.5 h-3.5" :style="'color:' + (currentMetric === m.id ? m.color : '#94a3b8')"></i>
+                                <span x-text="m.name"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Scale Selector -->
+                <div class="space-y-2">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 ml-1 tracking-widest">Model Size</span>
+                    <div class="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
+                        <button 
+                            @click="currentScale = 'base'"
+                            :class="currentScale === 'base' ? 'bg-white text-cyan-600 shadow-sm' : 'text-slate-500'"
+                            class="px-6 py-2 rounded-xl text-xs font-bold transition-all"
+                        >Base</button>
+                        <button 
+                            @click="currentScale = 'large'"
+                            :class="currentScale === 'large' ? 'bg-white text-cyan-600 shadow-sm' : 'text-slate-500'"
+                            class="px-6 py-2 rounded-xl text-xs font-bold transition-all"
+                        >Large</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metric Display Block -->
+        <div class="card-shadow p-8 rounded-[3rem] bg-white relative overflow-hidden transition-all duration-500">
+            <!-- Dynamic Glow -->
+            <div 
+                class="absolute -top-32 -right-32 w-96 h-96 blur-[150px] rounded-full transition-all duration-1000"
+                :class="{
+                    'bg-cyan-500/10': currentMetric === 'entropy',
+                    'bg-green-500/10': currentMetric === 'curvature',
+                    'bg-pink-500/10': currentMetric === 'invariance'
+                }"
+            ></div>
+
+            <!-- Content Area -->
+            <div class="chart-container-large relative z-10 bg-slate-50/10 rounded-[2rem] border border-slate-50 overflow-hidden">
+                
+                <!-- CURVATURE -->
+                <div class="absolute inset-0 transition-opacity duration-500" 
+                     :class="currentMetric === 'curvature' ? 'opacity-100 z-20' : 'opacity-0 z-10 pointer-events-none'">
+                    <iframe :src="currentScale === 'large' ? 'large_curvature_interactive.html' : 'curvature_interactive.html'" class="plotly-iframe" title="Curvature Plot"></iframe>
+                </div>
+
+                <!-- ENTROPY -->
+                <div class="absolute inset-0 transition-opacity duration-500" 
+                     :class="currentMetric === 'entropy' ? 'opacity-100 z-20' : 'opacity-0 z-10 pointer-events-none'">
+                    <iframe :src="currentScale === 'large' ? 'large_entropy_interactive.html' : 'entropy_interactive.html'" class="plotly-iframe" title="Entropy Plot"></iframe>
+                </div>
+
+                <!-- INVARIANCE -->
+                <div class="absolute inset-0 transition-opacity duration-500" 
+                     :class="currentMetric === 'invariance' ? 'opacity-100 z-20' : 'opacity-0 z-10 pointer-events-none'">
+                    <iframe :src="currentScale === 'large' ? 'large_invariance_interactive.html' : 'invariance_interactive.html'" class="plotly-iframe" title="Invariance Plot"></iframe>
+                </div>
+            </div>
+
+            <!-- Context Footer -->
+            <div class="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4 relative z-10 px-4">
+                <div class="flex items-center gap-2 text-xs text-slate-400 font-medium">
+                    <i data-lucide="info" class="w-4 h-4 text-cyan-500"></i>
+                    <span x-show="currentMetric === 'entropy'">Low entropy suggests representation collapse and specialized pruning.</span>
+                    <span x-show="currentMetric === 'curvature'">Decreased curvature signifies neural trajectory straightening.</span>
+                    <span x-show="currentMetric === 'invariance'">Stability against distortions peaks in the middle layers.</span>
+                </div>
+                <div class="px-4 py-1.5 rounded-full bg-slate-900 text-white text-[9px] font-bold uppercase tracking-widest">
+                    Model Scale: <span x-text="currentScale"></span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Training Dynamics & Geometric Relaxation Section -->
+    <section id="impact" class="py-12 px-6 max-w-7xl mx-auto">
+        <div class="mb-10 text-center sm:text-left">
+            <h2 class="text-3xl font-bold mb-4 text-slate-900 italic tracking-tight uppercase leading-none">Training Dynamics &<br>Geometric Relaxation</h2>
+            <p class="text-slate-500 text-sm font-medium leading-relaxed max-w-4xl">
+                Evolution of embedding curvature during the first training iteration of a HuBERT model, from initialization to convergence.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+            <!-- Insights from Section 379 -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="card-shadow p-6 rounded-3xl bg-slate-50 border-slate-100">
+                    <h3 class="font-bold text-slate-900 flex items-center gap-2 mb-3">
+                        <i data-lucide="zap" class="w-4 h-4 text-purple-600"></i>
+                        Rapid Encoding
+                    </h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Initially, the model exhibits low and uniform curvature (≈ 1.1). Optimization triggers a <strong>sharp surge</strong> (≈ 1.4), reflecting the rapid encoding of acoustic complexity.
+                    </p>
+                </div>
+                <div class="card-shadow p-6 rounded-3xl bg-slate-50 border-slate-100">
+                    <h3 class="font-bold text-slate-900 flex items-center gap-2 mb-3">
+                        <i data-lucide="split" class="w-4 h-4 text-green-600"></i>
+                        Structural Separation
+                    </h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        As training progresses, a separation emerges: early layers (0–40%) maintain high curvature for intricate features, while deep layers (> 40%) undergo <strong>progressive relaxation</strong>.
+                    </p>
+                </div>
+                <div class="card-shadow p-6 rounded-3xl bg-slate-50 border-slate-100">
+                    <h3 class="font-bold text-slate-900 flex items-center gap-2 mb-3">
+                        <i data-lucide="maximize" class="w-4 h-4 text-amber-600"></i>
+                        Linearization Phase
+                    </h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        In the final phase, curvature drops in deeper layers, signaling a linearization process where the model <strong>"flattens"</strong> its representations to facilitate linear separability.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Plotly Interactive Visual (Figure 6) -->
+            <div class="lg:col-span-2 card-shadow rounded-[3rem] bg-white overflow-hidden p-4">
+                <div class="flex items-center justify-between mb-4 px-4 pt-2">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Figure 6: HuBERT Training Curvature Evolution</span>
+                    <span class="px-2 py-0.5 rounded bg-purple-50 text-purple-600 text-[9px] font-bold">INITIALIZATION → CONVERGENCE</span>
+                </div>
+                <div class="chart-container-large relative bg-slate-50/10 rounded-[2rem] border border-slate-50 overflow-hidden" style="height: 550px;">
+                    <iframe src="curvature_steps_smooth_colors.html" class="plotly-iframe" title="Geometric Relaxation during Training"></iframe>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CLPM -->
+    <section id="clpm" class="py-20 px-6 max-w-7xl mx-auto bg-slate-50 rounded-[3rem] my-12 border border-slate-200 overflow-hidden relative">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-cyan-600/5 blur-[100px] rounded-full"></div>
+        
+        <div class="mb-12 text-center">
+            <h2 class="text-4xl font-black mb-4 text-slate-900 italic tracking-tighter uppercase leading-none">CLPM: Multi-Objective Analysis</h2>
+            <p class="text-slate-500 font-medium max-w-2xl mx-auto">
+                Cross-Layer Performance Matrix for **Wav2Vec2**, evaluating how representations from training layer <em>i</em> transfer to evaluation layer <em>j</em> across four distinct dimensions.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+            <div class="lg:col-span-1 space-y-4">
+                <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-cyan-500">
+                    <h4 class="font-bold text-sm text-slate-900 mb-2">1. Phonetic Consistency</h4>
+                    <p class="text-xs text-slate-500">High stability observed in phoneme preservation across middle layers (4-9).</p>
+                </div>
+                <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-pink-500">
+                    <h4 class="font-bold text-sm text-slate-900 mb-2">2. Identity Volatility</h4>
+                    <p class="text-xs text-slate-500">Speaker identity shows high volatility, often being pruned in late-stage layers.</p>
+                </div>
+                <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-amber-500">
+                    <h4 class="font-bold text-sm text-slate-900 mb-2">3. Prosodic Features</h4>
+                    <p class="text-xs text-slate-500">Pitch and energy transfer effectively between early and mid-range depths.</p>
+                </div>
+                <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-purple-500">
+                    <h4 class="font-bold text-sm text-slate-900 mb-2">4. Semantic Rupture</h4>
+                    <p class="text-xs text-slate-500">Wav2Vec2 displays a sharp "functional rupture" near layer 11 for global semantic tasks.</p>
+                </div>
+            </div>
+
+            <!-- Plotly Interactive Visual (4 Matrices) -->
+            <div class="lg:col-span-3 card-shadow rounded-[3rem] bg-white overflow-hidden p-2 min-h-[850px]">
+                <div class="flex items-center justify-between px-6 pt-4 mb-2">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Interactive Figure: Wav2Vec2 Layer Transfers</span>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        <span class="text-[9px] font-bold text-slate-400">4-MATRIX PERSPECTIVE</span>
+                    </div>
+                </div>
+                <div class="w-full h-[800px] rounded-[2.5rem] overflow-hidden">
+                    <iframe src="cross_layer_evaluation.html" class="plotly-iframe" title="Wav2Vec2 CLPM Analysis"></iframe>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-16 border-t border-slate-100 text-center px-6">
+        <div class="text-slate-400 text-[10px] uppercase font-black tracking-[0.3em]">
+            Audio SSL Dynamics Explorer © 2026
+        </div>
+    </footer>
+
+</body>
+</html>
