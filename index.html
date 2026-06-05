@@ -5,12 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>InsideSSL: Understanding Self-Supervised Speech Representations using a Model-Centric Perspective</title>
     
-    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- MathJax for LaTeX Rendering -->
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
@@ -233,7 +230,6 @@
 </head>
 <body x-data="dashboardApp()">
 
-    <!-- Navigation -->
     <nav class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-4 flex justify-between items-center">
         <div class="flex items-center space-x-2">
             <div class="w-8 h-8 bg-cyan-600 rounded-lg flex items-center justify-center shadow-lg shadow-cyan-500/20">
@@ -253,11 +249,17 @@
         <a href="#" class="bg-slate-900 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-cyan-600 transition shadow-lg shadow-slate-900/10 text-xs sm:text-sm">Full Paper</a>
     </nav>
 
-    <!-- Hero -->
     <section class="pt-32 pb-12 px-6 max-w-7xl mx-auto text-center">
-        <div class="inline-block px-3 py-1 rounded-full border border-slate-200 text-[10px] font-mono text-cyan-600 mb-6 bg-slate-50 uppercase tracking-widest font-bold">
-            Scientific Insights Dashboard
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
+            <div class="inline-block px-3 py-1 rounded-full border border-slate-200 text-[10px] font-mono text-cyan-600 bg-slate-50 uppercase tracking-widest font-bold">
+                Scientific Insights Dashboard
+            </div>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-emerald-200 text-[11px] font-bold text-emerald-700 bg-emerald-50 uppercase tracking-wide shadow-sm">
+                <i data-lucide="award" class="w-3.5 h-3.5"></i>
+                Accepted at Interspeech 2026 (Long Paper Track)
+            </div>
         </div>
+        
         <h1 class="text-3xl md:text-5xl font-extrabold mb-6 leading-tight text-slate-900 max-w-5xl mx-auto">
             <span class="gradient-text">InsideSSL:</span> Understanding Self-Supervised Speech Representations using a Model-Centric Perspective
         </h1>
@@ -266,7 +268,6 @@
         </p>
     </section>
 
-    <!-- Abstract -->
     <section id="abstract" class="py-12 px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 border-b border-slate-100 pb-20">
         <div class="lg:col-span-2 card-shadow p-8 rounded-3xl">
             <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-slate-900">
@@ -300,7 +301,6 @@
         </div>
     </section>
 
-    <!-- Main Metrics Visualizer -->
     <section id="metrics" class="py-20 px-6 max-w-7xl mx-auto">
         <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 gap-8">
             <div class="max-w-md">
@@ -333,7 +333,6 @@
             <div class="absolute -top-32 -right-32 w-96 h-96 blur-[150px] rounded-full transition-all duration-1000" :class="{'bg-cyan-500/10': currentMetric === 'entropy', 'bg-green-500/10': currentMetric === 'curvature', 'bg-pink-500/10': currentMetric === 'invariance'}"></div>
             
             <div class="chart-container-large relative z-10 bg-slate-50/10 rounded-[2rem] border border-slate-50 overflow-hidden">
-                <!-- LOADING SPINNER -->
                 <div x-show="loading[currentMetric]" 
                      x-transition:enter="transition opacity duration-200" 
                      x-transition:leave="transition opacity duration-400"
@@ -342,7 +341,6 @@
                     <p class="mt-4 text-[11px] font-bold text-slate-500 uppercase tracking-[0.3em]">Processing Plotly Data...</p>
                 </div>
 
-                <!-- Plotly Iframes -->
                 <div class="absolute inset-0 transition-opacity duration-500" :class="currentMetric === 'curvature' ? 'opacity-100 z-20' : 'opacity-0 z-10 pointer-events-none'">
                     <iframe x-show="currentScale !== ''" :src="currentScale === 'large' ? 'large_curvature_interactive.html' : 'curvature_interactive.html'" @load="loading.curvature = false" class="plotly-iframe"></iframe>
                 </div>
@@ -356,7 +354,6 @@
         </div>
     </section>
 
-    <!-- HuBERT Training Dynamics Section -->
     <section id="impact" class="py-12 px-6 max-w-7xl mx-auto border-t border-slate-50 pt-20">
         <div class="mb-10 text-center sm:text-left">
             <h2 class="text-3xl font-bold mb-4 text-slate-900 italic tracking-tight uppercase leading-none">Training Dynamics &<br>Geometric Relaxation</h2>
@@ -385,7 +382,6 @@
         </div>
     </section>
 
-    <!-- GCM Multi-Objective Analysis -->
     <section id="gcm-analysis" class="py-20 px-6 max-w-7xl mx-auto bg-slate-50 rounded-[3rem] my-12 border border-slate-200 overflow-hidden relative">
         <div class="absolute top-0 right-0 w-64 h-64 bg-cyan-600/5 blur-[100px] rounded-full"></div>
         <div class="mb-12 text-center">
@@ -402,10 +398,6 @@
                     <h4 class="font-bold text-sm text-slate-900 mb-2">2. Identity Volatility</h4>
                     <p class="text-xs text-slate-500">Speaker identity is often discarded in deep layers to focus on linguistics.</p>
                 </div>
-                <!-- <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-amber-500 shadow-sm">
-                    <h4 class="font-bold text-sm text-slate-900 mb-2">3. Prosodic Robustness</h4>
-                    <p class="text-xs text-slate-500">Pitch features show effective transfer in the early network half.</p>
-                </div> -->
                 <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-purple-500 shadow-sm">
                     <h4 class="font-bold text-sm text-slate-900 mb-2">4. Functional Rupture</h4>
                     <p class="text-xs text-slate-500">Sharp semantic pruning occurs specifically at terminal layers (layer 11).</p>
@@ -423,7 +415,6 @@
         </div>
     </section>
 
-    <!-- GCM Audio Matrix Explorer -->
     <section id="gcm-audio" class="py-20 px-6 max-w-7xl mx-auto bg-white rounded-[4rem] my-12 border border-slate-200 overflow-hidden relative shadow-inner">
         <div class="mb-12 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 text-center lg:text-left">
             <div class="max-w-xl">
@@ -464,14 +455,12 @@
 
             <div class="lg:col-span-9 card-shadow rounded-[3rem] bg-white p-8 lg:p-12 overflow-x-auto">
                 <div class="min-w-[650px] mx-auto">
-                    <!-- Matrix Grid Column Headers (X-axis) -->
                     <div class="gcm-grid-row mb-3">
                         <div class=""></div>
                         <template x-for="j in 13" :key="j-1">
                             <div class="text-[11px] font-bold text-slate-400 text-center" x-text="'$z^{(' + (j-1) + ')}$'"></div>
                         </template>
                     </div>
-                    <!-- Matrix Content (Y-axis indices + Cells) -->
                     <div class="flex flex-col gap-1.5">
                         <template x-for="i in 13" :key="i-1">
                             <div class="gcm-grid-row">
@@ -494,7 +483,6 @@
         </div>
     </section>
 
-    <!-- Code Section -->
     <section id="code-section" class="py-20 px-6 max-w-7xl mx-auto">
         <div class="card-shadow rounded-[3rem] p-12 bg-slate-900 text-white relative overflow-hidden">
             <div class="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 blur-[100px] rounded-full"></div>
@@ -511,7 +499,6 @@
         </div>
     </section>
 
-    <!-- Citation Section -->
     <section id="cite-section" class="py-20 px-6 max-w-7xl mx-auto border-t border-slate-100">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
             <div class="lg:col-span-4">
@@ -528,7 +515,8 @@
                 <div class="bg-slate-50 rounded-3xl p-8 border border-slate-100 overflow-x-auto shadow-inner">
                     <pre id="bibtex-code" class="text-[13px] font-mono text-slate-600 leading-relaxed">@inproceedings{insidessl_2026,
   title={InsideSSL: Understanding Self-Supervised Speech Representations using a Model-Centric Perspective},
-  author={Anonymous Authors},
+  author={Samir sadok, Xavier Alameda-Pineda},
+  booktitle={INTERSPEECH},
   year={2026}
 }</pre>
                 </div>
@@ -536,7 +524,6 @@
         </div>
     </section>
 
-    <!-- Footer -->
     <footer class="py-16 border-t border-slate-100 text-center px-6">
         <div class="text-slate-400 text-[10px] uppercase font-black tracking-[0.3em]">
             InsideSSL Model-Centric Explorer © 2026
